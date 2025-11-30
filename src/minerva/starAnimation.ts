@@ -1,6 +1,9 @@
 /**
  * Star Animation (Safari Debug Mode).
  *
+ * Direct TS port of the original Webflow cloneable script
+ * with detailed logging to debug Safari behaviour.
+ *
  * @author <cabal@digerati.design>
  */
 
@@ -43,6 +46,12 @@ export const starAnimation = () => {
     let stars: { element: HTMLElement; timeline: any }[] = [];
     const eases: any[] = [];
 
+    const random = (min: number, max?: number): number => {
+        if (max == null) { max = min; min = 0; }
+        if (min > max) { const tmp = min; min = max; max = tmp; }
+        return min + (max - min) * Math.random();
+    };
+
     console.log('[Safari Debug] Building eases…');
     try {
         for (let i = 0; i < numAnimations; i++) {
@@ -63,14 +72,12 @@ export const starAnimation = () => {
         return;
     }
 
-    // Life-cycle tracking
-    console.log('[Safari Debug] Adding window.load + resize listeners.');
-    window.addEventListener('load', onLoad);
-    window.addEventListener('resize', onResize);
+    // --- LOAD / RESIZE WIRING WITH READY STATE CHECK ---
+    console.log('[Safari Debug] document.readyState:', document.readyState);
 
-    function onLoad() {
+    const onLoad = () => {
         console.group('%c[Safari Debug] onLoad()', 'color: cyan');
-        console.log('[onLoad] Fired in Safari?', true);
+        console.log('[onLoad] Fired.');
         createStars();
 
         try {
@@ -80,14 +87,27 @@ export const starAnimation = () => {
             console.warn('[onLoad] Could not remove baseStar:', e);
         }
         console.groupEnd();
-    }
+    };
 
-    function onResize() {
+    const onResize = () => {
         console.group('%c[Safari Debug] onResize()', 'color: yellow');
         clearStars();
         createStars();
         console.groupEnd();
+    };
+
+    if (document.readyState === 'complete') {
+        console.log('[Safari Debug] load already fired → calling onLoad() immediately.');
+        onLoad();
+    } else {
+        console.log('[Safari Debug] attaching window.load listener.');
+        window.addEventListener('load', onLoad);
     }
+
+    console.log('[Safari Debug] attaching window.resize listener.');
+    window.addEventListener('resize', onResize);
+
+    // --- CORE STAR LOGIC ---
 
     function createStars() {
         console.group('[Safari Debug] createStars()');
@@ -95,13 +115,15 @@ export const starAnimation = () => {
         console.log('[Safari Debug] Containers found:', twinklingStars.length);
 
         twinklingStars.forEach((element, index) => {
-            const w = element.offsetWidth;
-            const h = element.offsetHeight;
-            console.log(`[Safari Debug] Container ${index + 1}: size = ${w} x ${h}`);
+            const elementWidth = element.offsetWidth;
+            const elementHeight = element.offsetHeight;
+            console.log(
+                `[Safari Debug] Container ${index + 1}: size = ${elementWidth} x ${elementHeight}`,
+            );
 
             for (let i = 0; i < numStars; i++) {
-                if (i === 0) console.log('[Safari Debug] Creating first star..');
-                stars.push(createStar(element, w, h));
+                if (i === 0) console.log('[Safari Debug] Creating first star in container', index + 1);
+                stars.push(createStar(element, elementWidth, elementHeight));
             }
         });
         console.log('[Safari Debug] Total stars created:', stars.length);
@@ -111,7 +133,7 @@ export const starAnimation = () => {
     function clearStars() {
         console.group('[Safari Debug] clearStars()');
         stars.forEach((star, i) => {
-            if (i === 0) console.log('[Safari Debug] Killing first timeline..');
+            if (i === 0) console.log('[Safari Debug] Killing first timeline + removing star');
             star.timeline.kill();
             star.element.remove();
         });
@@ -120,9 +142,9 @@ export const starAnimation = () => {
         console.groupEnd();
     }
 
-    function createStar(parent: HTMLElement, width: number, height: number) {
+    function createStar(parentElement: HTMLElement, width: number, height: number) {
         const star = baseStar.cloneNode(true) as HTMLElement;
-        parent.appendChild(star);
+        parentElement.appendChild(star);
 
         TweenLite.set(star, {
             rotation: random(360),
@@ -134,29 +156,29 @@ export const starAnimation = () => {
         });
 
         const tl = new TimelineMax({ repeat: -1, yoyo: true });
+
         for (let i = 0; i < numAnimations; i++) {
             const ease1 = eases[Math.floor(random(numAnimations))];
             const ease2 = eases[Math.floor(random(numAnimations))];
-            tl.to(star, random(durationMin, durationMax), {
-                autoAlpha: random(0.7, 1),
-                scale: random(0.15, 0.4),
-                ease: ease1,
-            }, `+=${random(delayMin, delayMax)}`)
-                .to(star, random(durationMin, durationMax), {
-                    autoAlpha: 0,
-                    scale: 0,
-                    ease: ease2,
-                }, `+=${random(appearMin, appearMax)}`);
+
+            const alpha = random(0.7, 1);
+            const scale = random(0.15, 0.4);
+
+            const appear = '+=' + random(appearMin, appearMax);
+            const delay = '+=' + random(delayMin, delayMax);
+            const duration1 = random(durationMin, durationMax);
+            const duration2 = random(durationMin, durationMax);
+
+            tl.to(star, duration1, { autoAlpha: alpha, scale: scale, ease: ease1 }, delay)
+                .to(star, duration2, { autoAlpha: 0, scale: 0, ease: ease2 }, appear);
         }
 
         tl.progress(random(1));
-        return { element: star, timeline: tl };
-    }
 
-    function random(min: number, max?: number): number {
-        if (max == null) { max = min; min = 0; }
-        if (min > max) { const tmp = min; min = max; max = tmp; }
-        return min + (max - min) * Math.random();
+        return {
+            element: star,
+            timeline: tl,
+        };
     }
 
     console.groupEnd();
