@@ -1,7 +1,7 @@
 import { skipToMainContent } from "$digerati/skipToMainContent";
 import { currentYear } from "$digerati/currentYear";
-import { displayGiftVariants } from "$minerva/giftForm";
-import { cleanFormPostData } from "$minerva/giftForm";
+import { displayGiftVariants, cleanFormPostData } from "$minerva/giftForm";
+import { starAnimation } from "$minerva/starAnimation";
 
 window.Webflow || [];
 window.Webflow.push(() => {
@@ -9,4 +9,5 @@ window.Webflow.push(() => {
   currentYear();
   cleanFormPostData();
   displayGiftVariants();
+  starAnimation();
 });
