@@ -1,7 +1,5 @@
 /**
- * Star Animation.
- *
- * Direct TS port of the original Webflow cloneable script.
+ * Star Animation (Safari Debug Mode).
  *
  * @author <cabal@digerati.design>
  */
@@ -13,8 +11,23 @@ declare const TweenLite: any,
     Linear: any;
 
 export const starAnimation = () => {
+    console.group('%c[Star Animation] Init', 'color: lime');
+    console.log('[Safari Debug] Function called.');
+
+    // Check GSAP globals
+    console.log('[Safari Debug] GSAP globals:', {
+        TweenLite: typeof TweenLite,
+        TimelineMax: typeof TimelineMax,
+        RoughEase: typeof RoughEase,
+        Linear: typeof Linear,
+    });
+
     const baseStar = document.querySelector<HTMLElement>('[dd-animation="star"]');
+    console.log('[Safari Debug] baseStar found:', !!baseStar);
+
     if (!baseStar) {
+        console.warn('[Safari Debug] No baseStar... EXITING.');
+        console.groupEnd();
         return;
     }
 
@@ -30,62 +43,86 @@ export const starAnimation = () => {
     let stars: { element: HTMLElement; timeline: any }[] = [];
     const eases: any[] = [];
 
-    for (let i = 0; i < numAnimations; i++) {
-        const ease = new RoughEase({
-            template: Linear.easeNone,
-            strength: random(1, 3),
-            points: Math.floor(random(50, 200)),
-            taper: 'both',
-            randomize: true,
-            clamp: true,
-        });
-
-        eases.push(ease);
+    console.log('[Safari Debug] Building eases…');
+    try {
+        for (let i = 0; i < numAnimations; i++) {
+            const ease = new RoughEase({
+                template: Linear.easeNone,
+                strength: random(1, 3),
+                points: Math.floor(random(50, 200)),
+                taper: 'both',
+                randomize: true,
+                clamp: true,
+            });
+            eases.push(ease);
+        }
+        console.log('[Safari Debug] eases created:', eases.length);
+    } catch (err) {
+        console.error('[Safari Debug] FAILED creating RoughEase:', err);
+        console.groupEnd();
+        return;
     }
 
-    // Wait for images to load
+    // Life-cycle tracking
+    console.log('[Safari Debug] Adding window.load + resize listeners.');
     window.addEventListener('load', onLoad);
     window.addEventListener('resize', onResize);
 
     function onLoad() {
+        console.group('%c[Safari Debug] onLoad()', 'color: cyan');
+        console.log('[onLoad] Fired in Safari?', true);
         createStars();
-        document.body.removeChild(baseStar);
+
+        try {
+            baseStar.remove();
+            console.log('[onLoad] baseStar removed.');
+        } catch (e) {
+            console.warn('[onLoad] Could not remove baseStar:', e);
+        }
+        console.groupEnd();
     }
 
     function onResize() {
+        console.group('%c[Safari Debug] onResize()', 'color: yellow');
         clearStars();
         createStars();
+        console.groupEnd();
     }
 
     function createStars() {
-        const twinklingStars = document.querySelectorAll<HTMLElement>(
-            '[dd-animation="background"]',
-        );
+        console.group('[Safari Debug] createStars()');
+        const twinklingStars = document.querySelectorAll<HTMLElement>('[dd-animation="background"]');
+        console.log('[Safari Debug] Containers found:', twinklingStars.length);
 
-        twinklingStars.forEach((element) => {
-            const elementWidth = element.offsetWidth;
-            const elementHeight = element.offsetHeight;
+        twinklingStars.forEach((element, index) => {
+            const w = element.offsetWidth;
+            const h = element.offsetHeight;
+            console.log(`[Safari Debug] Container ${index + 1}: size = ${w} x ${h}`);
 
             for (let i = 0; i < numStars; i++) {
-                stars.push(createStar(element, elementWidth, elementHeight));
+                if (i === 0) console.log('[Safari Debug] Creating first star..');
+                stars.push(createStar(element, w, h));
             }
         });
+        console.log('[Safari Debug] Total stars created:', stars.length);
+        console.groupEnd();
     }
 
     function clearStars() {
-        stars.forEach((star) => {
-            if (star.element.parentNode) {
-                star.element.parentNode.removeChild(star.element);
-            }
+        console.group('[Safari Debug] clearStars()');
+        stars.forEach((star, i) => {
+            if (i === 0) console.log('[Safari Debug] Killing first timeline..');
             star.timeline.kill();
+            star.element.remove();
         });
-
+        console.log('[Safari Debug] Stars removed:', stars.length);
         stars = [];
+        console.groupEnd();
     }
 
-    function createStar(parentElement: HTMLElement, width: number, height: number) {
+    function createStar(parent: HTMLElement, width: number, height: number) {
         const star = baseStar.cloneNode(true) as HTMLElement;
-        parentElement.appendChild(star);
+        parent.appendChild(star);
 
         TweenLite.set(star, {
             rotation: random(360),
@@ -97,29 +134,23 @@ export const starAnimation = () => {
         });
 
         const tl = new TimelineMax({ repeat: -1, yoyo: true });
-
         for (let i = 0; i < numAnimations; i++) {
             const ease1 = eases[Math.floor(random(numAnimations))];
             const ease2 = eases[Math.floor(random(numAnimations))];
-
-            const alpha = random(0.7, 1);
-            const scale = random(0.15, 0.4);
-
-            const appear = '+=' + random(appearMin, appearMax);
-            const delay = '+=' + random(delayMin, delayMax);
-            const duration1 = random(durationMin, durationMax);
-            const duration2 = random(durationMin, durationMax);
-
-            tl.to(star, duration1, { autoAlpha: alpha, scale: scale, ease: ease1 }, delay)
-                .to(star, duration2, { autoAlpha: 0, scale: 0, ease: ease2 }, appear);
+            tl.to(star, random(durationMin, durationMax), {
+                autoAlpha: random(0.7, 1),
+                scale: random(0.15, 0.4),
+                ease: ease1,
+            }, `+=${random(delayMin, delayMax)}`)
+                .to(star, random(durationMin, durationMax), {
+                    autoAlpha: 0,
+                    scale: 0,
+                    ease: ease2,
+                }, `+=${random(appearMin, appearMax)}`);
         }
 
         tl.progress(random(1));
-
-        return {
-            element: star,
-            timeline: tl,
-        };
+        return { element: star, timeline: tl };
     }
 
     function random(min: number, max?: number): number {
@@ -127,4 +158,6 @@ export const starAnimation = () => {
         if (min > max) { const tmp = min; min = max; max = tmp; }
         return min + (max - min) * Math.random();
     }
+
+    console.groupEnd();
 };
