@@ -115,25 +115,33 @@ export const starAnimation = () => {
         console.log('[Safari Debug] Containers found:', twinklingStars.length);
 
         twinklingStars.forEach((element, index) => {
-            // Make sure container can host absolutely positioned children
-            if (!element.style.position) {
-                element.style.position = 'relative';
-            }
-            if (!element.style.overflow) {
-                element.style.overflow = 'hidden';
-            }
+            // Read per-container star count
+            const customCountAttr = element.getAttribute('dd-star-count');
+            const thisContainerStarCount = customCountAttr
+                ? parseInt(customCountAttr, 10)
+                : numStars;
+
+            console.log(
+                `[Safari Debug] Container ${index + 1}: using star count = ${thisContainerStarCount}`
+            );
+
+            // Ensure overlay positioning
+            if (!element.style.position) element.style.position = 'relative';
+            if (!element.style.overflow) element.style.overflow = 'hidden';
 
             const elementWidth = element.offsetWidth;
             const elementHeight = element.offsetHeight;
+
             console.log(
-                `[Safari Debug] Container ${index + 1}: size = ${elementWidth} x ${elementHeight}`,
+                `[Safari Debug] Container ${index + 1}: size = ${elementWidth} x ${elementHeight}`
             );
 
-            for (let i = 0; i < numStars; i++) {
+            for (let i = 0; i < thisContainerStarCount; i++) {
                 if (i === 0) console.log('[Safari Debug] Creating first star in container', index + 1);
                 stars.push(createStar(element, elementWidth, elementHeight));
             }
         });
+
         console.log('[Safari Debug] Total stars created:', stars.length);
         console.groupEnd();
     }
