@@ -115,6 +115,14 @@ export const starAnimation = () => {
         console.log('[Safari Debug] Containers found:', twinklingStars.length);
 
         twinklingStars.forEach((element, index) => {
+            // Make sure container can host absolutely positioned children
+            if (!element.style.position) {
+                element.style.position = 'relative';
+            }
+            if (!element.style.overflow) {
+                element.style.overflow = 'hidden';
+            }
+
             const elementWidth = element.offsetWidth;
             const elementHeight = element.offsetHeight;
             console.log(
