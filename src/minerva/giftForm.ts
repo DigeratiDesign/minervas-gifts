@@ -1,6 +1,6 @@
 /**
  * Display Gift Variants.
- * 
+ *
  * @author <cabal@digerati.design>
  */
 export const displayGiftVariants = () => {
@@ -8,6 +8,7 @@ export const displayGiftVariants = () => {
     if (!gifts) {
         return;
     }
+
     /**
      * Disable Gift Variants.
      */
@@ -15,40 +16,75 @@ export const displayGiftVariants = () => {
         const allGiftVariants = document.querySelectorAll('[dd-gift="variants"]');
         allGiftVariants.forEach(variant => {
             variant.classList.add('hide');
-            let variantRadioButtons = variant.querySelectorAll('input[type="radio"]');
+            const variantRadioButtons = variant.querySelectorAll('input[type="radio"]');
             if (!variantRadioButtons) {
                 return;
             }
             variantRadioButtons.forEach(variantRadioButton => {
-                variantRadioButton.setAttribute('disabled', true);
+                variantRadioButton.setAttribute('disabled', 'true');
             });
         });
     };
+
     disableGiftVariants();
+
     /**
      * Add Click Handler.
      */
     gifts.forEach(gift => {
-        gift.addEventListener('click', (): void => {
+        gift.addEventListener('click', (event: MouseEvent): void => {
+            const target = event.target as HTMLElement | null;
+
+            const giftVariants = gift.querySelector<HTMLElement>('[dd-gift="variants"]');
+
+            // If click is inside the variants area, let the radios behave normally
+            if (giftVariants && target && giftVariants.contains(target)) {
+                return; // no preventDefault, no custom logic
+            }
+
+            // From here on, it's a click on the card itself (not on a variant radio/label)
+            event.preventDefault();
+
+            // Collapse / disable all variants first
             disableGiftVariants();
-            let giftVariants = gift.querySelector('[dd-gift="variants"]');
-            if (!giftVariants) {
-                return;
+
+            // Show + enable variants only if this gift actually has them
+            if (giftVariants) {
+                giftVariants.classList.remove('hide');
+
+                const giftVariantRadioButtons = giftVariants.querySelectorAll('input[type="radio"]');
+                if (giftVariantRadioButtons) {
+                    giftVariantRadioButtons.forEach(giftVariantRadioButton => {
+                        giftVariantRadioButton.removeAttribute('disabled');
+                    });
+                }
             }
-            giftVariants.classList.remove('hide');
-            let giftVariantRadioButtons = giftVariants.querySelectorAll('input[type="radio"]');
-            if (!giftVariantRadioButtons) {
-                return;
+
+            // Always select the *main* Gift radio (works for gifts with OR without variants)
+            const mainGiftRadio =
+                gift.querySelector<HTMLInputElement>('input[type="radio"][name="Gift"]') ||
+                gift.querySelector<HTMLInputElement>('input[type="radio"][data-name="Gift"]');
+
+            if (mainGiftRadio) {
+                mainGiftRadio.checked = true;
+                mainGiftRadio.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            giftVariantRadioButtons.forEach(giftVariantRadioButton => {
-                giftVariantRadioButton.removeAttribute('disabled');
-            });
+
+            // Smooth scroll the clicked gift into view
+            if (gift instanceof HTMLElement) {
+                gift.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center', // or 'start' if you prefer
+                    inline: 'nearest',
+                });
+            }
         });
     });
 };
+
 /**
  * Clean Form POST Data.
- * 
+ *
  * @author <cabal@digerati.design>
  */
 export const cleanFormPostData = () => {
@@ -61,15 +97,14 @@ export const cleanFormPostData = () => {
         if (!giftForm) {
             return;
         }
-        let radioButtons = document.querySelectorAll('input[type="radio"]');
+        const radioButtons = document.querySelectorAll('input[type="radio"]');
         if (!radioButtons) {
             return;
         }
         radioButtons.forEach(radioButton => {
-            if (radioButton.disabled) {
+            if ((radioButton as HTMLInputElement).disabled) {
                 radioButton.remove();
             }
         });
     });
 };
-
